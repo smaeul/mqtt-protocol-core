@@ -681,6 +681,17 @@ impl TryFrom<String> for MqttString {
     }
 }
 
+/// Implementation of `TryFrom<&String>` for `MqttString`
+///
+/// Converts a `String` reference to `MqttString`.
+impl TryFrom<&String> for MqttString {
+    type Error = MqttError;
+
+    fn try_from(s: &String) -> Result<Self, Self::Error> {
+        MqttString::new(s.as_str())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
