@@ -681,6 +681,59 @@ impl TryFrom<String> for MqttString {
     }
 }
 
+/// Trait for types that can be converted into `MqttString`
+///
+/// This trait provides a flexible way to create `MqttString` instances from various string types.
+/// It allows you to pass pre-constructed `MqttString` objects directly without additional
+/// heap allocations, which is particularly useful in multi-threaded scenarios.
+///
+/// # Examples
+///
+/// ```ignore
+/// use mqtt_protocol_core::mqtt::packet::{IntoMqttString, MqttString};
+///
+/// // From &str
+/// let s1 = "test".into_mqtt_string().unwrap();
+/// assert_eq!(s1.as_str(), "test");
+///
+/// // From String
+/// let s2 = String::from("test").into_mqtt_string().unwrap();
+/// assert_eq!(s2.as_str(), "test");
+///
+/// // From MqttString (no additional allocation)
+/// let mqtt_str = MqttString::new("test").unwrap();
+/// let s3 = mqtt_str.into_mqtt_string().unwrap();
+/// assert_eq!(s3.as_str(), "test");
+/// ```
+pub trait IntoMqttString {
+    /// Convert self into an MqttString
+    fn into_mqtt_string(self) -> Result<MqttString, MqttError>;
+}
+
+impl IntoMqttString for &str {
+    fn into_mqtt_string(self) -> Result<MqttString, MqttError> {
+        MqttString::new(self)
+    }
+}
+
+impl IntoMqttString for String {
+    fn into_mqtt_string(self) -> Result<MqttString, MqttError> {
+        MqttString::new(self)
+    }
+}
+
+impl IntoMqttString for &String {
+    fn into_mqtt_string(self) -> Result<MqttString, MqttError> {
+        MqttString::new(self)
+    }
+}
+
+impl IntoMqttString for MqttString {
+    fn into_mqtt_string(self) -> Result<MqttString, MqttError> {
+        Ok(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

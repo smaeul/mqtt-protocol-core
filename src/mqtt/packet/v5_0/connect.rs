@@ -32,8 +32,8 @@ use serde::Serialize;
 use getset::{CopyGetters, Getters};
 
 use crate::mqtt::packet::json_bin_encode::escape_binary_json_string;
-use crate::mqtt::packet::mqtt_binary::MqttBinary;
-use crate::mqtt::packet::mqtt_string::MqttString;
+use crate::mqtt::packet::mqtt_binary::{IntoMqttBinary, MqttBinary};
+use crate::mqtt::packet::mqtt_string::{IntoMqttString, MqttString};
 use crate::mqtt::packet::packet_type::{FixedHeader, PacketType};
 use crate::mqtt::packet::GenericPacketDisplay;
 use crate::mqtt::packet::GenericPacketTrait;
@@ -734,8 +734,11 @@ impl ConnectBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn client_id(mut self, id: impl AsRef<str>) -> Result<Self, MqttError> {
-        let mqtt_str = MqttString::new(id.as_ref())?;
+    pub fn client_id<T>(mut self, id: T) -> Result<Self, MqttError>
+    where
+        T: IntoMqttString,
+    {
+        let mqtt_str = id.into_mqtt_string()?;
         self.client_id_buf = Some(mqtt_str);
         Ok(self)
     }
@@ -814,15 +817,19 @@ impl ConnectBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn will_message(
+    pub fn will_message<T, B>(
         mut self,
-        topic: impl AsRef<str>,
-        payload: impl AsRef<[u8]>,
+        topic: T,
+        payload: B,
         qos: Qos,
         retain: bool,
-    ) -> Result<Self, MqttError> {
-        let will_topic = MqttString::new(topic.as_ref())?;
-        let will_payload = MqttBinary::new(payload.as_ref().to_vec())?;
+    ) -> Result<Self, MqttError>
+    where
+        T: IntoMqttString,
+        B: IntoMqttBinary,
+    {
+        let will_topic = topic.into_mqtt_string()?;
+        let will_payload = payload.into_mqtt_binary()?;
 
         self.will_topic_buf = Some(will_topic);
         self.will_payload_buf = Some(will_payload);
@@ -863,8 +870,11 @@ impl ConnectBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn user_name(mut self, name: impl AsRef<str>) -> Result<Self, MqttError> {
-        let mqtt_str = MqttString::new(name.as_ref())?;
+    pub fn user_name<T>(mut self, name: T) -> Result<Self, MqttError>
+    where
+        T: IntoMqttString,
+    {
+        let mqtt_str = name.into_mqtt_string()?;
         self.user_name_buf = Some(mqtt_str);
 
         let mut flags = self.connect_flags_buf.unwrap_or([0b0000_0010])[0];
@@ -900,8 +910,11 @@ impl ConnectBuilder {
     ///     .build()
     ///     .unwrap();
     /// ```
-    pub fn password(mut self, pwd: impl AsRef<[u8]>) -> Result<Self, MqttError> {
-        let mqtt_bin = MqttBinary::new(pwd.as_ref().to_vec())?;
+    pub fn password<B>(mut self, pwd: B) -> Result<Self, MqttError>
+    where
+        B: IntoMqttBinary,
+    {
+        let mqtt_bin = pwd.into_mqtt_binary()?;
         self.password_buf = Some(mqtt_bin);
 
         let mut flags = self.connect_flags_buf.unwrap_or([0b0000_0010])[0];

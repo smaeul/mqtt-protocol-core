@@ -300,6 +300,47 @@ impl core::fmt::Debug for MqttBinary {
     }
 }
 
+/// Trait for types that can be converted into `MqttBinary`
+pub trait IntoMqttBinary {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError>;
+}
+
+impl IntoMqttBinary for &[u8] {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        MqttBinary::new(self)
+    }
+}
+
+impl<const N: usize> IntoMqttBinary for &[u8; N] {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        MqttBinary::new(&self[..])
+    }
+}
+
+impl IntoMqttBinary for &str {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        MqttBinary::new(self.as_bytes())
+    }
+}
+
+impl IntoMqttBinary for Vec<u8> {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        MqttBinary::new(&self)
+    }
+}
+
+impl IntoMqttBinary for &Vec<u8> {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        MqttBinary::new(self)
+    }
+}
+
+impl IntoMqttBinary for MqttBinary {
+    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
+        Ok(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 use crate::mqtt::packet::escape_binary_json_string;
-use crate::mqtt::packet::mqtt_binary::MqttBinary;
-use crate::mqtt::packet::mqtt_string::MqttString;
+use crate::mqtt::packet::mqtt_binary::{IntoMqttBinary, MqttBinary};
+use crate::mqtt::packet::mqtt_string::{IntoMqttString, MqttString};
 use crate::mqtt::packet::DecodeResult;
 use crate::mqtt::packet::VariableByteInteger;
 use crate::mqtt::result_code::MqttError;
@@ -372,9 +372,9 @@ macro_rules! mqtt_property_binary {
             /// ```
             pub fn new<T>(v: T) -> Result<Self, MqttError>
             where
-                T: AsRef<[u8]>,
+                T: IntoMqttBinary,
             {
-                let binary = MqttBinary::new(v)?;
+                let binary = v.into_mqtt_binary()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],
@@ -553,9 +553,9 @@ macro_rules! mqtt_property_string {
             /// ```
             pub fn new<T>(s: T) -> Result<Self, MqttError>
             where
-                T: AsRef<str>,
+                T: IntoMqttString,
             {
-                let value = MqttString::new(s)?;
+                let value = s.into_mqtt_string()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],
@@ -716,11 +716,11 @@ macro_rules! mqtt_property_string_pair {
             /// ```
             pub fn new<K, V>(key: K, val: V) -> Result<Self, MqttError>
             where
-                K: AsRef<str>,
-                V: AsRef<str>,
+                K: IntoMqttString,
+                V: IntoMqttString,
             {
-                let key_mqtt = MqttString::new(key)?;
-                let val_mqtt = MqttString::new(val)?;
+                let key_mqtt = key.into_mqtt_string()?;
+                let val_mqtt = val.into_mqtt_string()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],
