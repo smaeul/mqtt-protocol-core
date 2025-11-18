@@ -20,9 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::mqtt::packet::MqttString;
 use crate::mqtt::packet::Qos;
 use crate::mqtt::packet::RetainHandling;
-use crate::mqtt::packet::{IntoMqttString, MqttString};
 use crate::mqtt::result_code::MqttError;
 use alloc::string::ToString;
 use alloc::{string::String, vec::Vec};
@@ -566,9 +566,10 @@ impl SubEntry {
     /// ```
     pub fn new<T>(topic_filter: T, sub_opts: SubOpts) -> Result<Self, MqttError>
     where
-        T: IntoMqttString,
+        T: TryInto<MqttString>,
+        MqttError: From<T::Error>,
     {
-        let topic_filter = topic_filter.into_mqtt_string()?;
+        let topic_filter = topic_filter.try_into()?;
         Ok(Self {
             topic_filter,
             sub_opts,

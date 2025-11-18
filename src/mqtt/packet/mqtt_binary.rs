@@ -285,6 +285,38 @@ impl TryFrom<&str> for MqttBinary {
     }
 }
 
+impl TryFrom<&[u8]> for MqttBinary {
+    type Error = MqttError;
+
+    fn try_from(s: &[u8]) -> Result<Self, Self::Error> {
+        MqttBinary::new(s)
+    }
+}
+
+impl<const N: usize> TryFrom<&[u8; N]> for MqttBinary {
+    type Error = MqttError;
+
+    fn try_from(s: &[u8; N]) -> Result<Self, Self::Error> {
+        MqttBinary::new(&s[..])
+    }
+}
+
+impl TryFrom<Vec<u8>> for MqttBinary {
+    type Error = MqttError;
+
+    fn try_from(s: Vec<u8>) -> Result<Self, Self::Error> {
+        MqttBinary::new(&s)
+    }
+}
+
+impl TryFrom<&Vec<u8>> for MqttBinary {
+    type Error = MqttError;
+
+    fn try_from(s: &Vec<u8>) -> Result<Self, Self::Error> {
+        MqttBinary::new(s)
+    }
+}
+
 /// Implementation of `Default` for `MqttBinary`
 impl Default for MqttBinary {
     fn default() -> Self {
@@ -297,47 +329,6 @@ impl core::fmt::Debug for MqttBinary {
         f.debug_struct("MqttBinary")
             .field("data", &self.as_slice())
             .finish()
-    }
-}
-
-/// Trait for types that can be converted into `MqttBinary`
-pub trait IntoMqttBinary {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError>;
-}
-
-impl IntoMqttBinary for &[u8] {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        MqttBinary::new(self)
-    }
-}
-
-impl<const N: usize> IntoMqttBinary for &[u8; N] {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        MqttBinary::new(&self[..])
-    }
-}
-
-impl IntoMqttBinary for &str {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        MqttBinary::new(self.as_bytes())
-    }
-}
-
-impl IntoMqttBinary for Vec<u8> {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        MqttBinary::new(&self)
-    }
-}
-
-impl IntoMqttBinary for &Vec<u8> {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        MqttBinary::new(self)
-    }
-}
-
-impl IntoMqttBinary for MqttBinary {
-    fn into_mqtt_binary(self) -> Result<MqttBinary, MqttError> {
-        Ok(self)
     }
 }
 

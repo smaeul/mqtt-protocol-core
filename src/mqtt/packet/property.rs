@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 use crate::mqtt::packet::escape_binary_json_string;
-use crate::mqtt::packet::mqtt_binary::{IntoMqttBinary, MqttBinary};
-use crate::mqtt::packet::mqtt_string::{IntoMqttString, MqttString};
+use crate::mqtt::packet::mqtt_binary::MqttBinary;
+use crate::mqtt::packet::mqtt_string::MqttString;
 use crate::mqtt::packet::DecodeResult;
 use crate::mqtt::packet::VariableByteInteger;
 use crate::mqtt::result_code::MqttError;
@@ -372,9 +372,10 @@ macro_rules! mqtt_property_binary {
             /// ```
             pub fn new<T>(v: T) -> Result<Self, MqttError>
             where
-                T: IntoMqttBinary,
+                T: TryInto<MqttBinary>,
+                MqttError: From<T::Error>,
             {
-                let binary = v.into_mqtt_binary()?;
+                let binary = v.try_into()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],
@@ -553,9 +554,10 @@ macro_rules! mqtt_property_string {
             /// ```
             pub fn new<T>(s: T) -> Result<Self, MqttError>
             where
-                T: IntoMqttString,
+                T: TryInto<MqttString>,
+                MqttError: From<T::Error>,
             {
-                let value = s.into_mqtt_string()?;
+                let value = s.try_into()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],
@@ -716,11 +718,13 @@ macro_rules! mqtt_property_string_pair {
             /// ```
             pub fn new<K, V>(key: K, val: V) -> Result<Self, MqttError>
             where
-                K: IntoMqttString,
-                V: IntoMqttString,
+                K: TryInto<MqttString>,
+                MqttError: From<K::Error>,
+                V: TryInto<MqttString>,
+                MqttError: From<V::Error>,
             {
-                let key_mqtt = key.into_mqtt_string()?;
-                let val_mqtt = val.into_mqtt_string()?;
+                let key_mqtt = key.try_into()?;
+                let val_mqtt = val.try_into()?;
 
                 Ok(Self {
                     id_bytes: [$id as u8],

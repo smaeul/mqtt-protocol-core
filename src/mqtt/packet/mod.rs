@@ -20,9 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 mod mqtt_string;
-pub use self::mqtt_string::{IntoMqttString, MqttString};
+pub use self::mqtt_string::MqttString;
 mod mqtt_binary;
-pub use self::mqtt_binary::{IntoMqttBinary, MqttBinary};
+pub use self::mqtt_binary::MqttBinary;
 
 mod enum_packet;
 mod enum_store_packet;

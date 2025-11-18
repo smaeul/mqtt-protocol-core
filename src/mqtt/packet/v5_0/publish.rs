@@ -44,7 +44,7 @@ use crate::mqtt::packet::GenericPacketDisplay;
 use crate::mqtt::packet::GenericPacketTrait;
 #[cfg(feature = "std")]
 use crate::mqtt::packet::PropertiesToBuffers;
-use crate::mqtt::packet::{IntoMqttString, IntoPacketId, IsPacketId};
+use crate::mqtt::packet::{IntoPacketId, IsPacketId};
 use crate::mqtt::packet::{Properties, PropertiesParse, PropertiesSize, Property};
 use crate::mqtt::result_code::MqttError;
 use crate::mqtt::{Arc, ArcPayload, IntoPayload};
@@ -1043,9 +1043,10 @@ where
     /// ```
     pub fn topic_name<T>(mut self, topic: T) -> Result<Self, MqttError>
     where
-        T: IntoMqttString,
+        T: TryInto<MqttString>,
+        MqttError: From<T::Error>,
     {
-        let mqtt_str = topic.into_mqtt_string()?;
+        let mqtt_str = topic.try_into()?;
         if mqtt_str.as_str().contains('#') || mqtt_str.as_str().contains('+') {
             return Err(MqttError::MalformedPacket);
         }

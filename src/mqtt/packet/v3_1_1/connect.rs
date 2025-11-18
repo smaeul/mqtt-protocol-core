@@ -32,8 +32,8 @@ use serde::Serialize;
 use getset::{CopyGetters, Getters};
 
 use crate::mqtt::packet::json_bin_encode::escape_binary_json_string;
-use crate::mqtt::packet::mqtt_binary::{IntoMqttBinary, MqttBinary};
-use crate::mqtt::packet::mqtt_string::{IntoMqttString, MqttString};
+use crate::mqtt::packet::mqtt_binary::MqttBinary;
+use crate::mqtt::packet::mqtt_string::MqttString;
 use crate::mqtt::packet::packet_type::{FixedHeader, PacketType};
 use crate::mqtt::packet::qos::Qos;
 use crate::mqtt::packet::variable_byte_integer::VariableByteInteger;
@@ -681,9 +681,10 @@ impl ConnectBuilder {
     /// ```
     pub fn client_id<T>(mut self, id: T) -> Result<Self, MqttError>
     where
-        T: IntoMqttString,
+        T: TryInto<MqttString>,
+        MqttError: From<T::Error>,
     {
-        let mqtt_str = id.into_mqtt_string()?;
+        let mqtt_str = id.try_into()?;
         self.client_id_buf = Some(mqtt_str);
         Ok(self)
     }
@@ -777,11 +778,13 @@ impl ConnectBuilder {
         retain: bool,
     ) -> Result<Self, MqttError>
     where
-        T: IntoMqttString,
-        B: IntoMqttBinary,
+        T: TryInto<MqttString>,
+        MqttError: From<T::Error>,
+        B: TryInto<MqttBinary>,
+        MqttError: From<B::Error>,
     {
-        let will_topic = topic.into_mqtt_string()?;
-        let will_payload = payload.into_mqtt_binary()?;
+        let will_topic = topic.try_into()?;
+        let will_payload = payload.try_into()?;
 
         self.will_topic_buf = Some(will_topic);
         self.will_payload_buf = Some(will_payload);
@@ -824,9 +827,10 @@ impl ConnectBuilder {
     /// ```
     pub fn user_name<T>(mut self, name: T) -> Result<Self, MqttError>
     where
-        T: IntoMqttString,
+        T: TryInto<MqttString>,
+        MqttError: From<T::Error>,
     {
-        let mqtt_str = name.into_mqtt_string()?;
+        let mqtt_str = name.try_into()?;
         self.user_name_buf = Some(mqtt_str);
 
         let mut flags = self.connect_flags_buf.unwrap_or([0b0000_0010])[0];
@@ -874,9 +878,10 @@ impl ConnectBuilder {
     /// ```
     pub fn password<B>(mut self, pwd: B) -> Result<Self, MqttError>
     where
-        B: IntoMqttBinary,
+        B: TryInto<MqttBinary>,
+        MqttError: From<B::Error>,
     {
-        let mqtt_bin = pwd.into_mqtt_binary()?;
+        let mqtt_bin = pwd.try_into()?;
         self.password_buf = Some(mqtt_bin);
 
         let mut flags = self.connect_flags_buf.unwrap_or([0b0000_0010])[0];
