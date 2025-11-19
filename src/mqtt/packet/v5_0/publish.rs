@@ -688,6 +688,45 @@ where
         // Set topic name to empty string
         self.topic_name_buf = MqttString::new("").unwrap();
 
+        self.add_topic_alias(topic_alias)
+    }
+
+    /// Add TopicAlias property
+    ///
+    /// This method adds a TopicAlias property to the packet properties. This
+    /// is required to associate a topic alias with a topic name on the server.
+    /// Future messages can use only the topic alias and omit the topic name.
+    /// This is useful for reducing packet size when sending multiple messages
+    /// to the same topic.
+    ///
+    /// The method removes any existing TopicAlias property before adding the new one
+    /// to ensure only one TopicAlias property exists. It automatically recalculates
+    /// the property_length and remaining_length to reflect these changes.
+    ///
+    /// # Parameters
+    ///
+    /// - `topic_alias`: The numeric topic alias to associate with the topic name
+    ///
+    /// # Returns
+    ///
+    /// The modified `GenericPublish` instance with the TopicAlias property
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use mqtt_protocol_core::mqtt;
+    ///
+    /// let publish_with_topic = mqtt::packet::v5_0::Publish::builder()
+    ///     .topic_name("sensors/temperature/room1")
+    ///     .unwrap()
+    ///     .payload(b"23.5")
+    ///     .build()
+    ///     .unwrap();
+    ///
+    /// let publish_with_alias = publish_with_topic.add_topic_alias(42);
+    /// // props() now contains TopicAlias property with value 42
+    /// ```
+    pub fn add_topic_alias(mut self, topic_alias: TopicAliasType) -> Self {
         // Add TopicAlias property to the end of properties
         let topic_alias_property =
             Property::TopicAlias(crate::mqtt::packet::TopicAlias::new(topic_alias).unwrap());
@@ -1004,9 +1043,16 @@ where
     /// is published. Topic names cannot contain wildcard characters (+ or #)
     /// in PUBLISH packets, as these are only allowed in SUBSCRIBE packets.
     ///
+    /// This method accepts both string types (&str, String) and pre-constructed
+    /// `MqttString` instances. When passing a pre-constructed `MqttString`, no
+    /// additional heap allocation occurs, making it efficient for cross-thread
+    /// message passing scenarios.
+    ///
     /// # Parameters
     ///
-    /// - `topic`: The topic name as any type that can be referenced as a string
+    /// - `topic`: The topic name. Can be:
+    ///   - `&str` or `String` (will be converted to `MqttString`)
+    ///   - `MqttString` (passed by value without additional allocation)
     ///
     /// # Returns
     ///
@@ -1023,12 +1069,22 @@ where
     /// ```ignore
     /// use mqtt_protocol_core::mqtt;
     ///
+    /// // From &str (backward compatible)
     /// let builder = mqtt::packet::v5_0::Publish::builder()
     ///     .topic_name("sensors/temperature/room1")
     ///     .unwrap();
+    ///
+    /// // From pre-constructed MqttString (no additional allocation)
+    /// let topic = mqtt::packet::MqttString::new("sensors/temperature/room1").unwrap();
+    /// let builder = mqtt::packet::v5_0::Publish::builder()
+    ///     .topic_name(topic)
+    ///     .unwrap();
     /// ```
-    pub fn topic_name<T: AsRef<str>>(mut self, topic: T) -> Result<Self, MqttError> {
-        let mqtt_str = MqttString::new(topic)?;
+    pub fn topic_name<T>(mut self, topic: T) -> Result<Self, MqttError>
+    where
+        T: TryInto<MqttString, Error = MqttError>,
+    {
+        let mqtt_str = topic.try_into()?;
         if mqtt_str.as_str().contains('#') || mqtt_str.as_str().contains('+') {
             return Err(MqttError::MalformedPacket);
         }
